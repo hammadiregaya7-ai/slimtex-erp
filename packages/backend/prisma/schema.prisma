@@ -19,7 +19,7 @@ model Tenant {
   name        String
   slug        String   @unique // For subdomain routing
   taxId       String?  // Tunisian Tax ID (Matricule Fiscale)
-  address     Jsonb?   // Localized: { ar: "...", en: "..." }
+  address     Json?   // Localized: { ar: "...", en: "..." }
   phone       String?
   email       String?
   logoUrl     String?
@@ -42,6 +42,14 @@ model Tenant {
   quotes      Quote[]
   orders      PurchaseOrder[]
   payments    Payment[]
+  stockLevels StockLevel[]
+  stockMovements StockMovement[]
+  journalEntryLines JournalEntryLine[]
+  quoteItems  QuoteItem[]
+  invoiceItems InvoiceItem[]
+  purchaseOrderItems PurchaseOrderItem[]
+  syncLogs    SyncLog[]
+  webhookSubscriptions WebhookSubscription[]
 
   @@index([slug])
   @@map("tenants")
@@ -95,8 +103,8 @@ model Category {
   id          String   @id @default(uuid())
   tenantId    String
   parentId    String?  // For nested categories
-  name        Jsonb    // Localized: { ar: "...", en: "..." }
-  description Jsonb?   // Localized
+  name        Json    // Localized: { ar: "...", en: "..." }
+  description Json?   // Localized
   code        String?  // Internal category code
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
@@ -120,8 +128,8 @@ model Product {
   categoryId      String?
   sku             String
   barcode         String?   // EAN-13 or custom barcode
-  name            Jsonb     // Localized: { ar: "...", en: "..." }
-  description     Jsonb?    // Localized
+  name            Json     // Localized: { ar: "...", en: "..." }
+  description     Json?    // Localized
   unit            String    @default("PIECE") // UNIT, KG, METER, LITER, etc.
   costPrice       Decimal   @default(0) @db.Decimal(12, 4)
   salePrice       Decimal   @default(0) @db.Decimal(12, 4)
@@ -129,7 +137,7 @@ model Product {
   minStockLevel   Int       @default(0)
   maxStockLevel   Int?
   weight          Decimal?  @db.Decimal(10, 3)
-  dimensions      Jsonb?    // { length, width, height }
+  dimensions      Json?    // { length, width, height }
   images          String[]  // Array of image URLs
   isActive        Boolean   @default(true)
   isTrackable     Boolean   @default(true) // Track stock movements
@@ -155,9 +163,9 @@ model Product {
 model Warehouse {
   id          String   @id @default(uuid())
   tenantId    String
-  name        Jsonb    // Localized
+  name        Json    // Localized
   code        String
-  address     Jsonb?   // Localized
+  address     Json?   // Localized
   phone       String?
   isDefault   Boolean  @default(false)
   isActive    Boolean  @default(true)
@@ -205,7 +213,7 @@ model StockMovement {
   quantity    Int              // Positive for IN, negative for OUT
   referenceId String?          // Reference to Invoice, Order, etc.
   referenceType String?        // INVOICE, ORDER, ADJUSTMENT, TRANSFER
-  notes       Jsonb?           // Localized notes
+  notes       Json?           // Localized notes
   performedBy String           // User ID who performed the movement
   createdAt   DateTime         @default(now())
 
@@ -243,8 +251,8 @@ model Account {
   tenantId    String
   parentId    String?      // For account hierarchy
   code        String       // Account code (e.g., "1100", "4110")
-  name        Jsonb        // Localized: { ar: "...", en: "..." }
-  description Jsonb?       // Localized
+  name        Json        // Localized: { ar: "...", en: "..." }
+  description Json?       // Localized
   type        AccountType
   currency    String       @default("TND")
   isActive    Boolean      @default(true)
@@ -277,7 +285,7 @@ model JournalEntry {
   tenantId    String
   date        DateTime
   number      String   // Sequential journal entry number
-  description Jsonb    // Localized
+  description Json    // Localized
   reference   String?  // External reference (Invoice #, etc.)
   source      JournalSource
   isPosted    Boolean  @default(false)
@@ -315,7 +323,7 @@ model JournalEntryLine {
   accountId       String
   debit           Decimal @default(0) @db.Decimal(15, 4)
   credit          Decimal @default(0) @db.Decimal(15, 4)
-  description     Jsonb?  // Localized line description
+  description     Json?  // Localized line description
   reference       String? // Optional reference
 
   // Relations
@@ -338,13 +346,13 @@ model Quote {
   tenantId    String
   number      String        // Quote number
   customerId  String?       // Optional customer (can be walk-in)
-  customerName Jsonb?       // Localized customer name if no account
+  customerName Json?       // Localized customer name if no account
   customerEmail String?
   customerPhone String?
   status      QuoteStatus   @default(DRAFT)
   issueDate   DateTime      @default(now())
   expiryDate  DateTime?
-  notes       Jsonb?        // Localized terms & conditions
+  notes       Json?        // Localized terms & conditions
   items       QuoteItem[]
   subtotal    Decimal       @db.Decimal(15, 4)
   taxTotal    Decimal       @db.Decimal(15, 4)
@@ -376,7 +384,7 @@ model QuoteItem {
   tenantId  String
   quoteId   String
   productId String?
-  description Jsonb // Localized item description
+  description Json // Localized item description
   quantity  Decimal @db.Decimal(12, 4)
   unitPrice Decimal @db.Decimal(12, 4)
   taxRate   Decimal @default(19) @db.Decimal(5, 2)
@@ -398,10 +406,11 @@ model Invoice {
   tenantId    String
   number      String        // Invoice number (sequential per tenant)
   customerId  String?
-  customerName Jsonb?       // Localized
+  customerName Json?       // Localized
   customerEmail String?
   customerPhone String?
   customerTaxId String?     // Customer VAT/Tax ID
+  customerAddress Json?    // Localized address
   status      InvoiceStatus @default(DRAFT)
   type        InvoiceType   @default(STANDARD)
   issueDate   DateTime      @default(now())
@@ -409,7 +418,8 @@ model Invoice {
   etaInvoiceId String?      // Tunisian ETA invoice identifier
   etaReceiptId String?      // Tunisian ETA receipt identifier
   etaStatus   EtaStatus     @default(NOT_REQUIRED)
-  notes       Jsonb?        // Localized
+  notes       Json?        // Localized
+  reference   String?      // Customer PO reference
   items       InvoiceItem[]
   payments    Payment[]
   subtotal    Decimal       @db.Decimal(15, 4)
@@ -462,7 +472,7 @@ model InvoiceItem {
   tenantId  String
   invoiceId String
   productId String?
-  description Jsonb // Localized
+  description Json // Localized
   quantity  Decimal @db.Decimal(12, 4)
   unitPrice Decimal @db.Decimal(12, 4)
   taxRate   Decimal @default(19) @db.Decimal(5, 2)
@@ -488,13 +498,13 @@ model PurchaseOrder {
   tenantId    String
   number      String
   supplierId  String?
-  supplierName Jsonb?       // Localized
+  supplierName Json?       // Localized
   supplierEmail String?
   supplierPhone String?
   status      PurchaseOrderStatus @default(DRAFT)
   orderDate   DateTime      @default(now())
   expectedDate DateTime?
-  notes       Jsonb?
+  notes       Json?
   items       PurchaseOrderItem[]
   subtotal    Decimal       @db.Decimal(15, 4)
   taxTotal    Decimal       @db.Decimal(15, 4)
@@ -524,7 +534,7 @@ model PurchaseOrderItem {
   tenantId  String
   orderId   String
   productId String?
-  description Jsonb
+  description Json
   quantity  Decimal @db.Decimal(12, 4)
   unitPrice Decimal @db.Decimal(12, 4)
   taxRate   Decimal @default(19) @db.Decimal(5, 2)
@@ -552,7 +562,7 @@ model Payment {
   amount      Decimal     @db.Decimal(15, 4)
   method      PaymentMethod
   reference   String?     // Check number, transaction ID, etc.
-  notes       Jsonb?      // Localized
+  notes       Json?      // Localized
   paymentDate DateTime    @default(now())
   journalEntryId String?
   createdAt   DateTime    @default(now())
@@ -587,7 +597,7 @@ model SyncLog {
   entityType  String   // INVOICE, STOCK_MOVEMENT, etc.
   entityId    String?
   action      SyncAction
-  payload     Jsonb    // The synced data
+  payload     Json    // The synced data
   timestamp   DateTime @default(now())
   processed   Boolean  @default(false)
   error       String?
@@ -622,7 +632,7 @@ model WebhookSubscription {
   url         String
   secret      String   // For HMAC signature verification
   isActive    Boolean  @default(true)
-  headers     Jsonb?   // Custom headers
+  headers     Json?   // Custom headers
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -650,7 +660,7 @@ model WebhookDelivery {
   id              String   @id @default(uuid())
   subscriptionId  String
   eventType       WebhookEvent
-  payload         Jsonb
+  payload         Json
   status          WebhookStatus @default(PENDING)
   attempts        Int      @default(0)
   responseCode    Int?

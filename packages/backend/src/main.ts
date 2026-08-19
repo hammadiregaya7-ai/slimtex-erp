@@ -1,16 +1,41 @@
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe } from '@nestjs/common';
+import { ValidationPipe, Logger } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
+import helmet from 'helmet';
 import { AppModule } from './app.module';
+import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 
 async function bootstrap() {
+  const logger = new Logger('Bootstrap');
   const app = await NestFactory.create(AppModule);
 
-  // Enable CORS for frontend
+  // Global exception filter for consistent error responses
+  app.useGlobalFilters(new AllExceptionsFilter());
+
+  // Security: Helmet for HTTP headers
+  app.use(
+    helmet({
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: ["'self'"],
+          styleSrc: ["'self'", "'unsafe-inline'"],
+          imgSrc: ["'self'", 'data:', 'https:'],
+          scriptSrc: ["'self'"],
+          fontSrc: ["'self'"],
+        },
+      },
+      crossOriginEmbedderPolicy: false,
+    }),
+  );
+
+  // Enable CORS for frontend with enhanced security
   app.enableCors({
     origin: process.env.FRONTEND_URL || 'http://localhost:3000',
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Tenant-ID'],
+    maxAge: 86400, // 24 hours
   });
 
   // Global validation pipe
@@ -52,8 +77,8 @@ async function bootstrap() {
   const port = configService.get('PORT') || 3001;
 
   await app.listen(port);
-  console.log(`🚀 Slimtex ERP API running on: http://localhost:${port}`);
-  console.log(`📚 API Documentation: http://localhost:${port}/docs`);
+  logger.log(`🚀 Slimtex ERP API running on: http://localhost:${port}`);
+  logger.log(`📚 API Documentation: http://localhost:${port}/docs`);
 }
 
 bootstrap();

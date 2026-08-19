@@ -1,37 +1,28 @@
 ```
 # Dependencies
 node_modules/
+.pnpm-store/
+.npm/
+.yarn/
+.yarn-cache/
+
+# Build outputs
+dist/
+build/
+coverage/
+.nyc_output/
+.jest/
 
 # Environment variables
 .env
 .env.local
 .env.*
 
-# Prisma
-prisma/migrations/
-
-# Logs
-*.log
-
-# Temporary files
-*.tmp
-*.swp
-
-# IDE files
-.vscode/
-.idea/
-
-# Build outputs
-dist/
-build/
-target/
-
 # Python
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
-*.py.class
 .Python
 env/
 venv/
@@ -46,36 +37,123 @@ nosetests.xml
 coverage.xml
 *.cover
 *.log
-.gitattributes
-.next
-.semaphore/semaphore-cache
-.hypothesis/
-.coverage*
-.pytest_cache/
-.mypy_cache/
+.DS_Store
+Thumbs.db
 
-# Node.js
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
+# TypeScript
+*.tsbuildinfo
+*.bak
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*.tmp
+
+# OS
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Icon?
+apidoc/
+doc/
+docs/
+
+# Logs
+*.log
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by tools like istanbul
+coverage/
+
+# nyc test coverage
+.nyc_output
+
+# Grunt intermediate storage (https://gruntjs.com/creating-plugins#storing-task-files)
+.grunt
+
+# Bower dependency directory (https://bower.io/)
+bower_components
+
+# node-waf configuration
+.lock-wscript
+
+# Compiled binary addons (https://nodejs.org/api/addons.html)
+build/Release
+
+# Dependency directories
 node_modules/
 jspm_packages/
-web_modules/
-lib-cov
+
+# Typescript output
 *.tsbuildinfo
-.nyc_output
-coverage/
-.nyc_output/
-coverage/
-!.nyc_output/**
-!.coverage/**
-*.lcov
 
-# Database
-*.db
-*.db-journal
+# Temporary folders
+tmp/
+temp/
 
-# OS generated files
+# Prisma
+prisma/migrations/
+
+# Jest
+.jest/
+coverage/
+
+# ESLint cache
+.eslintcache
+
+# Next.js
+.next/
+out/
+
+# Nuxt.js
+.nuxt/
+dist/
+
+# vuepress build output
+.vuepress/dist
+
+# Serverless directories
+.serverless/
+
+# FuseBox cache
+.fusebox/
+
+# DynamoDB Local files
+.dynamodb/
+
+# TernJS port file
+.tern-port
+
+# Stores VSCode versions used for testing VSCode extensions
+.vscode-test
+
+# yarn v2
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+.pnp.*
+
+# dotenv environment variables file
+.env.test
+
+# local files
+*.local
+
+# Compiled JavaScript
+lib-cov
+
+# Debug log
+debug.log
+
+# System Files
 .DS_Store
 .DS_Store?
 ._*
@@ -83,50 +161,4 @@ coverage/
 .Trashes
 ehthumbs.db
 Thumbs.db
-desktop.ini
-
-# Compiled binary files
-*.exe
-*.dll
-*.so
-*.dylib
-*.o
-*.a
-*.obj
-*.out
-*.class
-*.jar
-*.war
-*.ear
-*.iml
-*.ipr
-*.iws
-*.suo
-*.sln
-*.csproj
-*.user
-*.userosscache
-*.sconscript
-*.pyc
-*.pyo
-*.pyd
-*.py.class
-.Python
-env/
-venv/
-.venv/
-pip-log.txt
-pip-delete-this-directory.txt
-.tox/
-.coverage
-.coverage.*
-.cache
-nosetests.xml
-coverage.xml
-*.cover
-*.log
-.gitattributes
-.next
-.semaphore/semaphore-cache
-.hypothesis/
 ```

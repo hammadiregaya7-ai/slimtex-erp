@@ -14,8 +14,10 @@ import { LocalStrategy } from './strategies/local.strategy';
     JwtModule.registerAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({
-        secret: configService.get('JWT_SECRET') || 'slimtex-secret-key-change-in-production',
-        signOptions: { expiresIn: '7d' },
+        secret: configService.get<string>('JWT_SECRET'),
+        signOptions: { 
+          expiresIn: configService.get<string>('JWT_EXPIRATION') || '7d',
+        },
       }),
       inject: [ConfigService],
     }),

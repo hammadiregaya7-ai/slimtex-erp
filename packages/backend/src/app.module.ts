@@ -23,11 +23,11 @@ import { WebhookModule } from './webhook/webhook.module';
       envFilePath: '.env',
     }),
 
-    // Rate limiting
+    // Rate limiting - configurable via environment variables
     ThrottlerModule.forRoot([
       {
-        ttl: 60000, // 1 minute
-        limit: 100, // 100 requests per minute
+        ttl: parseInt(process.env.THROTTLE_TTL || '60000'),
+        limit: parseInt(process.env.THROTTLE_LIMIT || '100'),
       },
     ]),
 
@@ -36,6 +36,7 @@ import { WebhookModule } from './webhook/webhook.module';
       redis: {
         host: process.env.REDIS_HOST || 'localhost',
         port: parseInt(process.env.REDIS_PORT || '6379'),
+        password: process.env.REDIS_PASSWORD || undefined,
       },
     }),
 

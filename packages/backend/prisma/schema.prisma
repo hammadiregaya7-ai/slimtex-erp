@@ -131,8 +131,8 @@ model Product {
   name            Json     // Localized: { ar: "...", en: "..." }
   description     Json?    // Localized
   unit            String    @default("PIECE") // UNIT, KG, METER, LITER, etc.
-  costPrice       Decimal   @default(0) @db.Decimal(12, 4)
-  salePrice       Decimal   @default(0) @db.Decimal(12, 4)
+  costPrice       Decimal   @default(0) @db.Decimal(15, 4)
+  salePrice       Decimal   @default(0) @db.Decimal(15, 4)
   taxRate         Decimal   @default(19) @db.Decimal(5, 2) // Tunisia VAT: 7%, 13%, 19%
   minStockLevel   Int       @default(0)
   maxStockLevel   Int?
@@ -385,10 +385,10 @@ model QuoteItem {
   quoteId   String
   productId String?
   description Json // Localized item description
-  quantity  Decimal @db.Decimal(12, 4)
-  unitPrice Decimal @db.Decimal(12, 4)
+  quantity  Decimal @db.Decimal(15, 4)
+  unitPrice Decimal @db.Decimal(15, 4)
   taxRate   Decimal @default(19) @db.Decimal(5, 2)
-  discount  Decimal @default(0) @db.Decimal(12, 4)
+  discount  Decimal @default(0) @db.Decimal(15, 4)
   total     Decimal @db.Decimal(15, 4)
 
   // Relations
@@ -473,10 +473,10 @@ model InvoiceItem {
   invoiceId String
   productId String?
   description Json // Localized
-  quantity  Decimal @db.Decimal(12, 4)
-  unitPrice Decimal @db.Decimal(12, 4)
+  quantity  Decimal @db.Decimal(15, 4)
+  unitPrice Decimal @db.Decimal(15, 4)
   taxRate   Decimal @default(19) @db.Decimal(5, 2)
-  discount  Decimal @default(0) @db.Decimal(12, 4)
+  discount  Decimal @default(0) @db.Decimal(15, 4)
   total     Decimal @db.Decimal(15, 4)
 
   // Relations
@@ -535,11 +535,11 @@ model PurchaseOrderItem {
   orderId   String
   productId String?
   description Json
-  quantity  Decimal @db.Decimal(12, 4)
-  unitPrice Decimal @db.Decimal(12, 4)
+  quantity  Decimal @db.Decimal(15, 4)
+  unitPrice Decimal @db.Decimal(15, 4)
   taxRate   Decimal @default(19) @db.Decimal(5, 2)
   total     Decimal @db.Decimal(15, 4)
-  receivedQty Decimal @default(0) @db.Decimal(12, 4)
+  receivedQty Decimal @default(0) @db.Decimal(15, 4)
 
   // Relations
   tenant  Tenant        @relation(fields: [tenantId], references: [id])

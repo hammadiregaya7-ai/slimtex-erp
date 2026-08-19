@@ -1,0 +1,6 @@
+
+> slimtex-erp@1.0.0 dev /workspace
+> pnpm --parallel dev
+
+ ERR_PNPM_INVALID_WORKSPACE_CONFIGURATION  packages field missing or empty
+ ELIFECYCLE  Command failed with exit code 1.

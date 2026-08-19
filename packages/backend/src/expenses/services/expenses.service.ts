@@ -3,6 +3,7 @@ import { ExpenseRepository } from '../repositories/expense.repository';
 import { CreateExpenseDto, UpdateExpenseDto, ApproveExpenseDto } from '../dto/expense.dto';
 import { PrismaService } from '../../common/prisma.service';
 import { PaymentStatus } from '@prisma/client';
+import { ExpenseGLComposer } from './expense-gl-composer.service';
 
 @Injectable()
 export class ExpensesService {
@@ -11,6 +12,7 @@ export class ExpensesService {
   constructor(
     private expenseRepository: ExpenseRepository,
     private prisma: PrismaService,
+    private glComposer: ExpenseGLComposer,
   ) {}
 
   async create(tenantId: string, dto: CreateExpenseDto, userId: string) {
@@ -171,10 +173,10 @@ export class ExpensesService {
       },
     });
 
-    // If no journal entry exists, create one automatically
+    // If no journal entry exists, create one automatically using GL Composer
     if (!updatedExpense.journalEntryId) {
       this.logger.log(`Auto-creating journal entry for paid expense ${id}`);
-      await this.createJournalEntry(id, tenantId, expense.createdBy || 'system');
+      return this.glComposer.createJournalEntry(id, tenantId, expense.createdBy || 'system');
     }
 
     return this.expenseRepository.findOne(id, tenantId);
@@ -263,213 +265,5 @@ export class ExpensesService {
       paymentStatusBreakdown,
       generatedAt: new Date(),
     };
-  }
-
-  async getMonthlyBreakdown(
-    tenantId: string,
-    year: number,
-    categoryId?: string,
-  ): Promise<{ month: number; total: number }[]> {
-    const breakdown: { month: number; total: number }[] = [];
-    
-    for (let month = 1; month <= 12; month++) {
-      const startDate = new Date(`${year}-${month.toString().padStart(2, '0')}-01`);
-      const endDate = new Date(`${year}-${month.toString().padStart(2, '0')}-31`);
-      
-      const total = await this.expenseRepository.getTotalByPeriod(
-        tenantId,
-        startDate,
-        endDate,
-        categoryId,
-      );
-      
-      breakdown.push({ month, total });
-    }
-    
-    return breakdown;
-  }
-
-  async getPaymentStatusBreakdown(
-    tenantId: string,
-    startDate: Date,
-    endDate: Date,
-  ): Promise<{ status: PaymentStatus; total: number; count: number }[]> {
-    const statuses: PaymentStatus[] = ['PENDING', 'PAID', 'OVERDUE'];
-    
-    const breakdown = await Promise.all(
-      statuses.map(async (status) => {
-        const expenses = await this.prisma.expense.aggregate({
-          where: {
-            tenantId,
-            date: {
-              gte: startDate,
-              lte: endDate,
-            },
-            paymentStatus: status,
-          },
-          _sum: {
-            total: true,
-          },
-          _count: {
-            id: true,
-          },
-        });
-        
-        return {
-          status,
-          total: Number(expenses._sum.total) || 0,
-          count: expenses._count.id || 0,
-        };
-      }),
-    );
-    
-    return breakdown;
-  }
-
-  async createJournalEntry(expenseId: string, tenantId: string, userId: string) {
-    const expense = await this.expenseRepository.findOne(expenseId, tenantId);
-    if (!expense) {
-      throw new NotFoundException(`Expense with ID ${expenseId} not found`);
-    }
-
-    if (expense.journalEntryId) {
-      throw new BadRequestException('Journal entry already exists for this expense');
-    }
-
-    // Get full expense with category relation
-    const expenseWithCategory = await this.prisma.expense.findUnique({
-      where: { id: expenseId, tenantId },
-      include: {
-        category: true,
-      },
-    });
-
-    if (!expenseWithCategory) {
-      throw new NotFoundException(`Expense with ID ${expenseId} not found`);
-    }
-
-    // Find expense account based on category if it has an account mapping (skip if field doesn't exist)
-    let expenseAccount;
-    try {
-      const categoryWithAccount = expenseWithCategory.category as any;
-      if (categoryWithAccount?.accountId) {
-        expenseAccount = await this.prisma.account.findUnique({
-          where: { id: categoryWithAccount.accountId },
-        });
-      }
-    } catch (e) {
-      // accountId field may not exist on ExpenseCategory yet
-    }
-    
-    // Fallback to generic EXPENSE type account
-    if (!expenseAccount) {
-      expenseAccount = await this.prisma.account.findFirst({
-        where: { tenantId, type: 'EXPENSE' },
-      });
-    }
-
-    // Determine cash/bank account based on payment method
-    let cashAccount;
-    if (expenseWithCategory.paymentMethod === 'BANK_TRANSFER') {
-      cashAccount = await this.prisma.account.findFirst({
-        where: { tenantId, type: 'ASSET', code: { startsWith: '12' } }, // Bank accounts
-      });
-    } else {
-      cashAccount = await this.prisma.account.findFirst({
-        where: { tenantId, type: 'ASSET', code: { startsWith: '11' } }, // Cash accounts
-      });
-    }
-
-    if (!expenseAccount || !cashAccount) {
-      throw new BadRequestException('Required accounts not configured');
-    }
-
-    this.logger.log(`Creating journal entry for expense ${expenseId}`);
-
-    // Create journal entry
-    const categoryName = (expenseWithCategory.category?.name as any)?.en || 'Uncategorized';
-    const categoryNameAr = (expenseWithCategory.category?.name as any)?.ar || 'غير مصنف';
-    
-    const journalEntry = await this.prisma.journalEntry.create({
-      data: {
-        tenantId,
-        date: expenseWithCategory.date,
-        number: await this.generateJournalNumber(tenantId),
-        description: { 
-          en: `Expense: ${expenseWithCategory.vendorName || 'Unknown vendor'} - ${categoryName}`,
-          ar: `مصروف: ${expenseWithCategory.vendorName || 'غير محدد'} - ${categoryNameAr}`,
-        },
-        reference: expenseWithCategory.invoiceNumber,
-        source: 'MANUAL',
-        isPosted: true,
-        totalDebit: expenseWithCategory.total,
-        totalCredit: expenseWithCategory.total,
-        createdBy: userId,
-        postedAt: new Date(),
-        lines: {
-          create: [
-            {
-              tenantId,
-              accountId: expenseAccount.id,
-              debit: expenseWithCategory.total,
-              credit: 0,
-              description: { en: 'Expense charge', ar: 'قيد المصروفات' },
-            },
-            {
-              tenantId,
-              accountId: cashAccount.id,
-              debit: 0,
-              credit: expenseWithCategory.total,
-              description: { en: 'Cash/Bank payment', ar: 'الدفع نقداً/بنكياً' },
-            },
-          ],
-        },
-      },
-      include: {
-        lines: true,
-      },
-    });
-
-    // Link expense to journal entry
-    const updatedExpense = await this.prisma.expense.update({
-      where: { id: expenseId, tenantId },
-      data: { journalEntryId: journalEntry.id },
-      include: { 
-        journalEntry: {
-          include: {
-            lines: {
-              include: {
-                account: true,
-              },
-            },
-          },
-        },
-        category: true,
-      },
-    });
-
-    this.logger.log(`Journal entry ${journalEntry.number} created for expense ${expenseId}`);
-    
-    return updatedExpense;
-  }
-
-  private async generateJournalNumber(tenantId: string): Promise<string> {
-    const lastEntry = await this.prisma.journalEntry.findFirst({
-      where: { tenantId },
-      orderBy: { createdAt: 'desc' },
-      select: { number: true },
-    });
-
-    const year = new Date().getFullYear();
-    const prefix = `JE-${year}-`;
-
-    if (!lastEntry) {
-      return `${prefix}0001`;
-    }
-
-    const lastNum = parseInt(lastEntry.number.split('-').pop() || '0', 10);
-    const nextNum = (lastNum + 1).toString().padStart(4, '0');
-
-    return `${prefix}${nextNum}`;
   }
 }

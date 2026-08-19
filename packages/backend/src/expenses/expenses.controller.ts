@@ -102,14 +102,6 @@ export class ExpensesController {
     return this.expensesService.markAsPaid(req.tenant.id, id, paymentDate);
   }
 
-  @Post(':id/journal-entry')
-  @ApiOperation({ summary: 'Create journal entry for expense' })
-  @ApiResponse({ status: 200, description: 'Journal entry created' })
-  @ApiResponse({ status: 400, description: 'Journal entry already exists or accounts not configured' })
-  @ApiResponse({ status: 404, description: 'Expense not found' })
-  createJournalEntry(@Param('id') id: string, @Request() req) {
-    return this.expensesService.createJournalEntry(id, req.tenant.id, req.user.id);
-  }
 
   @Delete(':id')
   @ApiOperation({ summary: 'Delete expense' })

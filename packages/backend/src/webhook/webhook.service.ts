@@ -52,7 +52,7 @@ export class WebhookService {
           'X-Slimtex-Signature': signature,
           'X-Slimtex-Event': eventType,
           'Content-Type': 'application/json',
-          ...(subscription.headers || {}),
+          ...(typeof subscription.headers === 'object' && subscription.headers !== null ? subscription.headers : {}),
         },
       });
     }

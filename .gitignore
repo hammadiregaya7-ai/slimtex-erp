@@ -1,1 +1,28 @@
-Nothing needs to be added to the .gitignore file based on the provided changes. The listed files are all TypeScript source files (.ts) which should not be ignored according to the rules.
+```
+# Dependencies
+node_modules/
+
+# Prisma
+node_modules/.prisma/
+
+# Environment
+.env
+.env.local
+*.env.*
+
+# Logs
+*.log
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build outputs
+dist/
+build/
+target/
+```

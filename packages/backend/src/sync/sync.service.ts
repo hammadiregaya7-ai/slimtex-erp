@@ -32,15 +32,27 @@ export class SyncService {
     success: boolean;
     processedCount: number;
     failedCount: number;
-    conflicts: any[];
+    conflicts: Array<{ entityId: string; action: 'CREATE' | 'UPDATE' | 'DELETE'; error: string }>;
   }> {
     const { deviceId, userId, entityType, operations } = payload;
+
+    // Get tenant from user first to use in logging
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { tenantId: true },
+    });
+
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    const tenantId = user.tenantId;
 
     const result = {
       success: true,
       processedCount: 0,
       failedCount: 0,
-      conflicts: [],
+      conflicts: [] as Array<{ entityId: string; action: 'CREATE' | 'UPDATE' | 'DELETE'; error: string }>,
     };
 
     // Sort operations by timestamp to maintain order
@@ -56,6 +68,7 @@ export class SyncService {
         // Log successful sync
         await this.prisma.syncLog.create({
           data: {
+            tenantId,
             deviceId,
             userId,
             entityType,
@@ -78,6 +91,7 @@ export class SyncService {
         // Log failed sync
         await this.prisma.syncLog.create({
           data: {
+            tenantId,
             deviceId,
             userId,
             entityType,

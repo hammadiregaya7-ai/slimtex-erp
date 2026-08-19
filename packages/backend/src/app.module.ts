@@ -6,14 +6,11 @@ import { BullModule } from '@nestjs/bull';
 // Modules
 import { TenantModule } from './tenant/tenant.module';
 import { AuthModule } from './auth/auth.module';
-import { UserModule } from './user/user.module';
-import { ProductModule } from './product/product.module';
 import { InventoryModule } from './inventory/inventory.module';
-import { AccountingModule } from './accounting/accounting.module';
 import { SalesModule } from './sales/sales.module';
-import { PurchasingModule } from './purchasing/purchasing.module';
 import { SyncModule } from './sync/sync.module';
 import { WebhookModule } from './webhook/webhook.module';
+import { ExpensesModule } from './expenses/expenses.module';
 
 @Module({
   imports: [
@@ -43,14 +40,11 @@ import { WebhookModule } from './webhook/webhook.module';
     // Domain Modules
     TenantModule,
     AuthModule,
-    UserModule,
-    ProductModule,
     InventoryModule,
-    AccountingModule,
     SalesModule,
-    PurchasingModule,
     SyncModule,
     WebhookModule,
+    ExpensesModule,
   ],
 })
 export class AppModule {}

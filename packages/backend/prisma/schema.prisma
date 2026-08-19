@@ -48,6 +48,8 @@ model Tenant {
   quoteItems  QuoteItem[]
   invoiceItems InvoiceItem[]
   purchaseOrderItems PurchaseOrderItem[]
+  expenseCategories ExpenseCategory[]
+  expenses Expense[]
   syncLogs    SyncLog[]
   webhookSubscriptions WebhookSubscription[]
 
@@ -299,6 +301,7 @@ model JournalEntry {
   // Relations
   tenant  Tenant             @relation(fields: [tenantId], references: [id])
   lines   JournalEntryLine[]
+  expenses Expense[]
 
   @@unique([tenantId, number])
   @@index([tenantId])
@@ -679,4 +682,79 @@ enum WebhookStatus {
   SUCCESS
   FAILED
   RETRYING
+}
+
+// ============================================================================
+// EXPENSE TRACKING MODULE
+// ============================================================================
+
+model ExpenseCategory {
+  id          String   @id @default(uuid())
+  tenantId    String
+  parentId    String?  // For nested categories
+  name        Json    // Localized: { ar: "...", en: "..." }
+  code        String?  // Internal category code
+  description Json?   // Localized description
+  color       String?  // UI color for categorization
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  parent      ExpenseCategory? @relation("ExpenseCategoryHierarchy", fields: [parentId], references: [id])
+  children    ExpenseCategory[] @relation("ExpenseCategoryHierarchy")
+  expenses    Expense[]
+
+  @@unique([tenantId, code])
+  @@index([tenantId])
+  @@index([parentId])
+  @@map("expense_categories")
+}
+
+model Expense {
+  id              String        @id @default(uuid())
+  tenantId        String
+  categoryId      String
+  date            DateTime      @default(now())
+  amount          Decimal       @db.Decimal(15, 4)
+  taxRate         Decimal       @default(0) @db.Decimal(5, 2)
+  taxAmount       Decimal       @default(0) @db.Decimal(15, 4)
+  total           Decimal       @db.Decimal(15, 4)
+  vendorName      String?       // Vendor/supplier name
+  vendorTaxId     String?       // Vendor tax ID
+  invoiceNumber   String?       // Vendor invoice reference
+  paymentMethod   PaymentMethod @default(CASH)
+  paymentStatus   PaymentStatus @default(PENDING)
+  paymentDate     DateTime?
+  notes           Json?        // Localized notes
+  attachments     String[]     // Array of receipt image URLs
+  billableToCustomerId String?  // If expense is billable to a customer
+  projectId       String?      // Link to project/job (future feature)
+  journalEntryId  String?      // Linked accounting entry
+  createdBy       String       // User ID
+  approvedBy      String?      // User ID who approved
+  approvedAt      DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  // Relations
+  tenant          Tenant        @relation(fields: [tenantId], references: [id])
+  category        ExpenseCategory @relation(fields: [categoryId], references: [id])
+  journalEntry    JournalEntry? @relation(fields: [journalEntryId], references: [id])
+
+  @@index([tenantId])
+  @@index([categoryId])
+  @@index([date])
+  @@index([paymentStatus])
+  @@index([createdBy])
+  @@map("expenses")
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  PARTIALLY_PAID
+  OVERDUE
+  CANCELLED
 }

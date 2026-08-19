@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import { Module, Global } from '@nestjs/common';
 
 const prismaClientSingleton = () => {
   return new PrismaClient({
@@ -16,3 +17,10 @@ export const prisma = globalThis.prisma ?? prismaClientSingleton();
 if (process.env.NODE_ENV !== 'production') globalThis.prisma = prisma;
 
 export class PrismaService extends PrismaClient {}
+
+@Global()
+@Module({
+  providers: [PrismaService],
+  exports: [PrismaService],
+})
+export class PrismaModule {}

@@ -1,0 +1,32 @@
+{
+  "name": "slimtex-erp",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Cloud-native multi-tenant SaaS ERP for Tunisian SMEs",
+  "scripts": {
+    "dev": "pnpm --parallel dev",
+    "build": "pnpm --recursive build",
+    "lint": "pnpm --recursive lint",
+    "test": "pnpm --recursive test",
+    "db:migrate": "pnpm --filter @slimtex/backend prisma migrate dev",
+    "db:seed": "pnpm --filter @slimtex/backend prisma db seed",
+    "db:studio": "pnpm --filter @slimtex/backend prisma studio",
+    "docker:up": "docker-compose up -d",
+    "docker:down": "docker-compose down"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "typescript": "^5.3.3",
+    "prettier": "^3.2.0",
+    "eslint": "^8.56.0"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=8.0.0"
+  },
+  "packageManager": "pnpm@8.14.0",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ]
+}

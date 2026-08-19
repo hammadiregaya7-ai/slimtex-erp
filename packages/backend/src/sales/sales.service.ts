@@ -320,18 +320,18 @@ export class SalesService {
       data: { invoiceId, paymentId: result.id, amount: result.amount },
     });
 
-    // Queue WhatsApp reminder if partially paid
-    if (result.status === 'PARTIALLY_PAID') {
-      const invoice = await this.prisma.invoice.findUnique({
-        where: { id: invoiceId },
-      });
-      
+    // Queue WhatsApp reminder if partially paid (use result which has updated values)
+    const updatedInvoice = await this.prisma.invoice.findUnique({
+      where: { id: invoiceId },
+    });
+    
+    if (updatedInvoice && updatedInvoice.status === 'PARTIALLY_PAID') {
       await this.webhookQueue.add('send-whatsapp', {
         tenantId,
         type: 'payment_reminder',
-        recipientPhone: invoice?.customerPhone,
-        invoiceNumber: invoice?.number,
-        remainingAmount: invoice?.total.toNumber() - result.amount,
+        recipientPhone: updatedInvoice.customerPhone,
+        invoiceNumber: updatedInvoice.number,
+        remainingAmount: updatedInvoice.total.toNumber() - updatedInvoice.paidAmount.toNumber(),
       });
     }
 
@@ -637,7 +637,7 @@ export class SalesService {
     await this.webhookService.triggerEvent({
       eventType: 'INVOICE_CANCELLED',
       tenantId,
-      data: { invoiceId, number: invoice.number, reason },
+      data: { invoiceId, number: result.number, reason },
     });
 
     return result;

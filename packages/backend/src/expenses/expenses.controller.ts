@@ -33,6 +33,7 @@ export class ExpensesController {
   @ApiOperation({ summary: 'Create a new expense' })
   @ApiResponse({ status: 201, description: 'Expense created successfully' })
   @ApiResponse({ status: 400, description: 'Bad request' })
+  @ApiResponse({ status: 404, description: 'Category, customer, or project not found' })
   create(@Body() createExpenseDto: CreateExpenseDto, @Request() req) {
     const tenantId = req.tenant.id;
     const userId = req.user.id;
@@ -82,14 +83,30 @@ export class ExpensesController {
   @ApiOperation({ summary: 'Approve expense' })
   @ApiResponse({ status: 200, description: 'Expense approved successfully' })
   @ApiResponse({ status: 400, description: 'Cannot approve already paid expense' })
+  @ApiResponse({ status: 404, description: 'Expense not found' })
   approve(@Param('id') id: string, @Body() dto: ApproveExpenseDto, @Request() req) {
     return this.expensesService.approve(req.tenant.id, id, dto);
+  }
+
+  @Post(':id/mark-paid')
+  @ApiOperation({ summary: 'Mark expense as paid' })
+  @ApiResponse({ status: 200, description: 'Expense marked as paid' })
+  @ApiResponse({ status: 400, description: 'Cannot pay unapproved expense or already paid' })
+  @ApiResponse({ status: 404, description: 'Expense not found' })
+  @ApiQuery({ name: 'paymentDate', required: false, type: String })
+  markAsPaid(
+    @Param('id') id: string, 
+    @Request() req,
+    @Query('paymentDate') paymentDate?: string,
+  ) {
+    return this.expensesService.markAsPaid(req.tenant.id, id, paymentDate);
   }
 
   @Post(':id/journal-entry')
   @ApiOperation({ summary: 'Create journal entry for expense' })
   @ApiResponse({ status: 200, description: 'Journal entry created' })
-  @ApiResponse({ status: 400, description: 'Journal entry already exists' })
+  @ApiResponse({ status: 400, description: 'Journal entry already exists or accounts not configured' })
+  @ApiResponse({ status: 404, description: 'Expense not found' })
   createJournalEntry(@Param('id') id: string, @Request() req) {
     return this.expensesService.createJournalEntry(id, req.tenant.id, req.user.id);
   }
@@ -98,14 +115,20 @@ export class ExpensesController {
   @ApiOperation({ summary: 'Delete expense' })
   @ApiResponse({ status: 200, description: 'Expense deleted successfully' })
   @ApiResponse({ status: 400, description: 'Cannot delete approved expense' })
+  @ApiResponse({ status: 404, description: 'Expense not found' })
   remove(@Param('id') id: string, @Request() req) {
     return this.expensesService.remove(req.tenant.id, id);
   }
 
   @Get('reports/:year')
   @ApiOperation({ summary: 'Get expense reports by year' })
-  @ApiResponse({ status: 200, description: 'Return expense report' })
-  getReports(@Param('year') year: string, @Request() req) {
-    return this.expensesService.getReports(req.tenant.id, parseInt(year, 10));
+  @ApiResponse({ status: 200, description: 'Return expense report with category breakdown' })
+  @ApiQuery({ name: 'month', required: false, type: Number, description: 'Filter by month (1-12)' })
+  getReports(
+    @Param('year') year: string, 
+    @Request() req,
+    @Query('month') month?: number,
+  ) {
+    return this.expensesService.getReports(req.tenant.id, parseInt(year, 10), month);
   }
 }

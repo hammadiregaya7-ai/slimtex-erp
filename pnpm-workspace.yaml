@@ -1,0 +1,9 @@
+pnpm:
+  overrides:
+    # Security overrides can go here
+
+# Global npm settings
+auto-install-peers: true
+exclude-links-from-lockfile: false
+
+shared-workspace-lockfile: true
